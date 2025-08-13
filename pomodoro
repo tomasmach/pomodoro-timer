@@ -1,0 +1,53 @@
+#!/bin/bash
+
+WORK_MINUTES=45
+BREAK_MINUTES=10
+
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --work) WORK_MINUTES="$2"; shift ;;
+        --break) BREAK_MINUTES="$2"; shift ;;
+        *) echo "Unknown parameter: $1"; exit 1 ;;
+    esac
+    shift
+done
+
+# Sends a notification if 'notify-send' or 'spd-say' are available
+send_notification() {
+    local message="$1"
+    if command -v notify-send &> /dev/null; then
+        notify-send -u critical -t 5000 "Pomodoro" "$message"
+    fi
+    if command -v spd-say &> /dev/null; then
+        spd-say "$message"
+    fi
+}
+
+wait_for_keypress() {
+    echo
+    # Pauses the script and waits for a single key press
+    read -n 1 -s -r -p "Press any key to start the next block..."
+    echo
+    echo "============================================================"
+}
+
+
+echo "Starting Pomodoro in a continuous loop."
+echo "Work: $WORK_MINUTES min | Break: $BREAK_MINUTES min"
+echo "Press Ctrl+C to exit."
+echo "============================================================"
+
+while true; do
+    # Work Block
+    echo "Starting WORK block ($WORK_MINUTES minutes)..."
+    timer "${WORK_MINUTES}m"
+    send_notification "Work block finished! Time for a break."
+    wait_for_keypress
+
+    # Break Block
+    echo "Starting BREAK ($BREAK_MINUTES minutes)..."
+    timer "${BREAK_MINUTES}m"
+    send_notification "Break is over. Back to work!"
+    wait_for_keypress
+done
+
